@@ -27,29 +27,15 @@
 
         jsr clearScreen
 
-        ; upper left
-        mva #0    plotX_lo
-        mva #0    plotX_hi
-        mva #0    plotY
-        jsr plotPoint
-
-        ; upper right
-        mva #$3F  plotX_lo
-        mva #$01  plotX_hi
-        mva #0    plotY
-        jsr plotPoint
-
-        ; lower left
-        mva #0    plotX_lo
-        mva #0    plotX_hi
-        mva #191  plotY
-        jsr plotPoint
-
-        ; lower right
-        mva #$3F  plotX_lo
-        mva #$01  plotX_hi
-        mva #191  plotY
-        jsr plotPoint
+        ; set up parameters
+        mva #0    x1        ; start X low byte
+        mva #0    x1_hi     ; start X high byte
+        mva #96   y1        ; start Y
+        mva #$3F  x2        ; end X low byte
+        mva #$01  x2_hi     ; end X high byte
+        mva #96   y2        ; end Y
+    
+        jsr drawLine
 
 
 halt:

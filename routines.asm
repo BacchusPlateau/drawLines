@@ -77,6 +77,18 @@ clearpage:
 ; ON ENTRY: nothing required
 ; ON EXIT:  GR.8 screen is active, SAVMSC points to screen RAM
 ; =====================================================================
+
+
+;   Draw yellow pixels on the Atari 800XL in Graphics Mode 8
+;   Uses CIO (Central I/O) to open the graphics mode, then writes
+;   pixel data directly to screen RAM.
+;   GR.8:   320 pixels wide × 192 tall   1 bit per pixel     2 colors
+;   GR.8:   40 bytes × 192 rows = 7,680 bytes
+;   GR.8:   320 pixels ÷ 8 pixels per byte = 40 bytes per row
+;   GR.8 byte:  P P P P P P P P
+;               | | | | | | | |
+;               7 6 5 4 3 2 1 0   (8 pixels, 1 bit each, on or off)
+
         ldx #$60                    ; X = $60        (select IOCB6)
         lda #$03                    ; A = $03        (OPEN command)
         sta ICCOM,x                 ; ICCOM = $03    (store open command)
@@ -101,7 +113,69 @@ clearpage:
         .endp
 
 ;=========================================================================================
+; draw a line using Bresenham's algorithm
 
+        .proc drawLine
+
+        ; first step, compute:
+        ; dx = x2 - x1    (16-bit subtraction)
+        ; dy = y2 - y1    (8-bit subtraction)
+
+        lda y2          ; A = Y2
+        sec             ; set carry
+        sbc y1          ; A = A - Y1
+        sta dy          ; dy = A
+
+        lda x2          ; A = x2 (low byte)
+        sec             ; set carry
+        sbc x1          ; A = A - X1 (low byte)
+        sta dx_lo       ; save low byte, but do not re-set carry
+
+        lda x2_hi       ; A = X2 (high byte)
+        sbc x1_hi       ; A = A - X1 (high byte)
+        sta dx_hi       ; save high byte
+
+        ; initialize current position to start point
+        lda x1          ; A = X1
+        sta plotX_lo    ; plotX_lo = A
+        lda x1_hi       ; A = X1_hi
+        sta plotX_hi    ; plotX_hi = A
+        lda y1          ; A = Y1
+        sta plotY       ; plotY = A
+
+        ; initialize error to 0
+        mva #0 err_lo           ; err_lo = 0
+        mva #0 err_hi           ; err_hi = 0
+
+lineloop:
+        jsr plotPoint           ; plot current pixel
+
+        ; advance x (16-bit increment)
+        inc plotX_lo            ; plotX_lo++
+        bne lineloop_check      ; if no overflow, check if done 
+                                ; if plotX_lo != 0 JUMP FORWARD to lineloop_check
+        inc plotX_hi            ; handle overflow from low to high byte
+                                ; only reaches here if plotX_lo overflowed to 0
+
+lineloop_check:
+        ; are we done? compare plotX to x2
+        lda plotX_lo            ; A = plotX_lo
+        cmp x2                  ; test: A = X2 ?
+        bne lineloop            ; not done, keep going
+                                ; if plotX_lo != x2 JUMP BACK to lineloop
+        lda plotX_hi            ; A = plotX_hi
+        cmp x2_hi               ; test: A = x2_hi ?
+        bne lineloop            ; not done, keep going
+                                ; if plotX_hi != x2_hi JUMP BACK to lineloop
+                                ; if both match we fall through - done!
+
+        
+
+        rts
+        .endp
+
+
+;=========================================================================================
 ; print a string
 ; Assumptions
 ; strptr_lo = low address of the string
