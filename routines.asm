@@ -148,8 +148,62 @@ clearpage:
         mva #0 err_hi           ; err_hi = 0
 
 lineloop:
-        jsr plotPoint           ; plot current pixel
+        ; save plotX before plotPoint destroys it
+        lda plotX_lo
+        pha
+        lda plotX_hi
+        pha
 
+        jsr plotPoint
+
+        ; restore plotX after plotPoint
+        pla
+        sta plotX_hi
+        pla
+        sta plotX_lo
+
+; add dy to error accumulator (16-bit + 8-bit addition)
+        lda err_lo              ; A = err_lo
+        clc                     ; clear carry
+        adc dy                  ; A += dy
+        sta err_lo              ; err_lo = A
+        lda err_hi              ; A = err_hi
+        adc #0                  ; propagate carry trick. if the carry was set it gets added to the high byte
+        sta err_hi              ; err_hi = A
+
+        ; check if error * 2 >= dx
+        ; compute error + error (16-bit)
+        lda err_lo              ; A = err_lo
+        clc                     ; clear carry
+        adc err_lo              ; A += err_lo (err_lo * 2)
+        sta temp_lo             ; temp_lo = A
+        lda err_hi              ; A = err_hi
+        adc err_hi              ; A += err_hi ((err_hi * 2) + carry)
+        sta temp_hi             ; temp_hi = A
+
+        ; compare temp (error*2) to dx
+        ; 16-bit comparison: check high byte first, then low byte
+        lda temp_hi     ; A = temp_hi
+        cmp dx_hi       ; Does temp_hi == dx_hi? 
+        bcc skip_y      ; temp_hi < dx_hi, no Y step needed (branch if carry is clear)
+        bne do_y_step   ; temp_hi > dx_hi, Y step needed (branch if not equal)
+        lda temp_lo     ; A = temp_lo (high bytes equal, check low bytes (if we got here, high bytes are equal))
+        cmp dx_lo       ; Does temp_lo == dx_lo?
+        bcc skip_y      ; temp_lo < dx_lo, no Y step needed
+
+do_y_step:
+        inc plotY       ; y = y + 1
+
+        ; error = error - dx (16-bit subtraction)
+        lda err_lo      ; A = err_lo
+        sec             ; set the carry
+        sbc dx_lo       ; A -= dx_lo
+        sta err_lo      ; err_lo = A
+        lda err_hi      ; A = err_hi
+        sbc dx_hi       ; A -= dex_hi
+        sta err_hi      ; err_hi = A
+
+skip_y:
         ; advance x (16-bit increment)
         inc plotX_lo            ; plotX_lo++
         bne lineloop_check      ; if no overflow, check if done 

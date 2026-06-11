@@ -27,21 +27,17 @@
 
         jsr clearScreen
 
-        ; set up parameters
-        mva #0    x1        ; start X low byte
-        mva #0    x1_hi     ; start X high byte
-        mva #96   y1        ; start Y
-        mva #$3F  x2        ; end X low byte
-        mva #$01  x2_hi     ; end X high byte
-        mva #96   y2        ; end Y
-    
+        mva #0    x1
+        mva #0    x1_hi
+        mva #0    y1        ; start at upper left (0,0)
+        mva #$3F  x2
+        mva #$01  x2_hi
+        mva #191  y2        ; end at lower right (319,191)
         jsr drawLine
-
 
 halt:
         jsr fightAttract
         jmp halt
-
 
         .endp
 
