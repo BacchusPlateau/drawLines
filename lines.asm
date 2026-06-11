@@ -27,12 +27,40 @@
 
         jsr clearScreen
 
+       ; top edge
         mva #0    x1
         mva #0    x1_hi
-        mva #0    y1        ; start at upper left (0,0)
+        mva #0    y1
         mva #$3F  x2
         mva #$01  x2_hi
-        mva #191  y2        ; end at lower right (319,191)
+        mva #0    y2
+        jsr drawLine
+
+        ; bottom edge
+        mva #0    x1
+        mva #0    x1_hi
+        mva #191  y1
+        mva #$3F  x2
+        mva #$01  x2_hi
+        mva #191  y2
+        jsr drawLine
+
+        ; left edge
+        mva #0    x1
+        mva #0    x1_hi
+        mva #0    y1
+        mva #0    x2
+        mva #0    x2_hi
+        mva #191  y2
+        jsr drawLine
+
+        ; right edge
+        mva #$3F  x1
+        mva #$01  x1_hi
+        mva #0    y1
+        mva #$3F  x2
+        mva #$01  x2_hi
+        mva #191  y2
         jsr drawLine
 
 halt:

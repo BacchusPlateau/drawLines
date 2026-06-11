@@ -135,6 +135,55 @@ clearpage:
         sbc x1_hi       ; A = A - X1 (high byte)
         sta dx_hi       ; save high byte
 
+        ; check for vertical line (dx = 0)
+        lda dx_lo
+        ora dx_hi       ; OR low and high bytes together
+        bne not_vertical ; if result != 0, not vertical
+
+        ; handle vertical line
+        ; initialize position first!
+        lda x1
+        sta plotX_lo
+        lda x1_hi
+        sta plotX_hi
+        lda y1
+        sta plotY
+
+        ; just loop Y from y1 to y2
+vertical_loop:
+        lda plotX_lo    ; save plotX before plotPoint destroys it
+        pha
+        lda plotX_hi
+        pha
+        
+        jsr plotPoint
+        
+        pla             ; restore plotX
+        sta plotX_hi
+        pla
+        sta plotX_lo
+        
+        inc plotY
+        lda plotY
+        cmp y2
+        bne vertical_loop
+        
+        ; plot final point
+        lda plotX_lo
+        pha
+        lda plotX_hi
+        pha
+        jsr plotPoint
+        pla
+        sta plotX_hi
+        pla
+        sta plotX_lo
+        
+        rts
+
+not_vertical:
+        ; continue with normal Bresenham...
+
         ; initialize current position to start point
         lda x1          ; A = X1
         sta plotX_lo    ; plotX_lo = A
