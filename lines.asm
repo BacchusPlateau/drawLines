@@ -63,6 +63,12 @@
         mva #191  y2
         jsr drawLine
 
+        mva #160  cx
+        mva #0    cx_hi
+        mva #96   cy
+        mva #50   radius
+        jsr drawCircle
+
 halt:
         jsr fightAttract
         jmp halt
